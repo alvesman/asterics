@@ -155,3 +155,7 @@ curl -X PUT http://localhost:8081/rest/runtime/model/state/start
 curl -X PUT http://localhost:8081/rest/runtime/model -H 'Content-Type: text/xml' \
      --data-binary @/var/opt/asterics-are/models/XFaceTrackerMouse_uinput.acs
 ```
+
+## License
+
+Public domain under [The Unlicense](LICENSE). AsTeRICS itself is a separate project with its own licensing (see https://www.asterics.eu).
