@@ -10,6 +10,12 @@ MODEL=XFaceTrackerMouse_uinput.acs; [ "${1:-}" = "--quiet" ] && MODEL=XFaceTrack
 HERE="$(cd "$(dirname "$0")" && pwd)"
 LOG=${XDG_STATE_HOME:-$HOME/.local/state}/asterics-facemouse; mkdir -p "$LOG"
 
+# 0. single instance: a second ARE would fight over the webcam, the ports and the log files
+if pgrep -u "$(id -u)" -f '^/usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java .*org\.eclipse\.osgi' >/dev/null; then
+    MSG="AsTeRICS is already running. Close its window first to start it again."
+    echo "$MSG" >&2; command -v zenity >/dev/null && zenity --info --text="$MSG" 2>/dev/null; exit 0
+fi
+
 # 1. uinput daemon: prefer the per-user service (needs membership of the 'input' group),
 #    otherwise fall back to an already running system-wide daemon socket.
 if id -nG | grep -qw input; then
@@ -20,7 +26,7 @@ else
     SOCK=/tmp/.ydotool_socket
 fi
 if [ ! -S "$SOCK" ]; then
-    MSG="No uinput daemon socket. Add yourself to the 'input' group (sudo usermod -aG input \$USER), then log out and in."
+    MSG="No uinput daemon socket. Add yourself to the 'input' group (sudo usermod -aG input \$USER), then reboot."
     echo "$MSG" >&2; command -v zenity >/dev/null && zenity --error --text="$MSG" 2>/dev/null; exit 1
 fi
 export YDOTOOL_SOCKET="$SOCK"

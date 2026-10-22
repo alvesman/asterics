@@ -32,7 +32,7 @@ Two things do not work out of the box on this system:
 
 ```bash
 curl -LO https://github.com/asterics/AsTeRICS/releases/download/4.3.0/asterics-are-4.3.0-ubuntu-22.04.deb
-sudo apt-get install -y libhidapi-libusb0
+sudo apt-get install -y libhidapi-libusb0 libxkbcommon-x11-0
 sudo dpkg -i asterics-are-4.3.0-ubuntu-22.04.deb
 ```
 
@@ -59,8 +59,9 @@ sudo apt-get install -y ydotool
 sudo usermod -aG input $USER
 ```
 
-Log out and back in so the group membership takes effect. The package ships a per-user
-`ydotool.service`; the launcher starts it on demand. Verify after re-login with `id -nG | grep input`.
+Reboot so the group membership takes effect (logging out and back in is not enough, because the
+per-user systemd manager survives the logout with the old groups). The package ships a per-user
+`ydotool.service`; the launcher starts it on demand. Verify after the reboot with `id -nG | grep input`.
 
 ### 4. Build the uinput model
 
@@ -140,9 +141,11 @@ Design notes that are not obvious:
 | Symptom | Check |
 |---|---|
 | ARE shows "Missing Constraint ... grizzly" or WebACS is dead | `start.sh` is not using Java 8. Re-run the `sed` from step 2. |
-| Launcher says "No uinput daemon socket" | You are not in the `input` group yet, or haven't re-logged in. |
+| Launcher says "No uinput daemon socket" | You are not in the `input` group yet, or haven't rebooted since joining it. |
 | Green dots follow the face but the cursor does not move | Bridge not running or not receiving. Look at `~/.local/state/asterics-facemouse/bridge.log` and `are.log`. |
 | Only one axis moves | The model has more than one OscOutClient, or a component started before it. Regenerate the model (step 4). |
+| Popup "Deployment Error: Couldn't start 3 ... asterics.mw.jnativehook.jar" | `libxkbcommon-x11-0` is missing. `sudo apt-get install -y libxkbcommon-x11-0`. |
+| Launcher says "AsTeRICS is already running" | An ARE window is still open (maybe minimised or behind a dialog). Close it, then start again. |
 | "Could not open camera device" | Another program holds the webcam, or the model was paused. Stop and start the model, or restart the launcher. |
 | Cursor moves on the wrong screen | With several monitors the cursor just continues from where it is; with the Grid window on another screen, move the cursor there first with the touchpad. |
 

@@ -29,7 +29,7 @@ machine, because the steps use the scripts in it:
 
 ## Steps
 
-Commands marked **(user)** need sudo or a re-login, so ask the user to run them. In Claude Code
+Commands marked **(user)** need sudo or a reboot, so ask the user to run them. In Claude Code
 the user can run them with the `!` prefix so the output lands in the session.
 
 ### 1. Check the machine
@@ -50,13 +50,18 @@ curl -sLO https://github.com/asterics/AsTeRICS/releases/download/4.3.0/asterics-
 **(user)**
 
 ```bash
-sudo apt-get install -y libhidapi-libusb0
+sudo apt-get install -y libhidapi-libusb0 libxkbcommon-x11-0
 sudo dpkg -i ~/Downloads/asterics/asterics-are-4.3.0-ubuntu-22.04.deb
 ```
 
 The package has no Java dependency; its post-install prints a reminder about Java 8, creates a
 menu entry, two udev rules (FS20, IrTrans), and moves models/profile/data/web to
 `/var/opt/asterics-are/` (world-writable, so model files can be written without sudo).
+
+`libxkbcommon-x11-0` is not a declared dependency, but the ARE's JNativeHook bundle needs it.
+Without it every ARE start shows a "Deployment Error: Couldn't start 3 from location
+...asterics.mw.jnativehook.jar" popup (found 2026-10-22 on a ThinkPad E590 where it was not
+preinstalled). Check with `ldd` on `libJNativeHook.so` extracted from that jar.
 
 ### 3. Java 8 for the ARE only
 
@@ -87,8 +92,11 @@ sudo apt-get install -y ydotool
 sudo usermod -aG input $USER
 ```
 
-The user must log out and back in (or reboot) before step 7 works. Verify afterwards with
-`id -nG | grep -w input`. The package provides a per-user `ydotool.service`; the launcher starts
+The user must **reboot** before step 7 works. Logging out and back in is not enough: the
+per-user `systemd --user` manager keeps running across a logout (verified 2026-10-22), keeps the
+old group list, and the terminal and `ydotool.service` it starts inherit that list. Verify
+afterwards with `id -nG | grep -w input`, or check the manager itself with
+`grep Groups /proc/$(pgrep -u $USER -x systemd)/status` (must include the `input` GID). The package provides a per-user `ydotool.service`; the launcher starts
 it on demand, and the socket appears at `$XDG_RUNTIME_DIR/.ydotool_socket`.
 
 ### 5. Generate the modified models
@@ -138,7 +146,7 @@ update-desktop-database ~/.local/share/applications 2>/dev/null
 
 Check that `Exec=` points at the real path of the launcher on the new machine.
 
-### 7. Test (after the user's re-login)
+### 7. Test (after the user's reboot)
 
 Ask the user to start "AsTeRICS Face Mouse" from the menu or run `~/asterics/start-facemouse.sh`.
 Expected: an ARE window at the right of the screen with Right / Double / Drag / On/Off / Menu
@@ -148,8 +156,8 @@ and the cursor following head movement. Dwelling still for about a second clicks
 Logs: `~/.local/state/asterics-facemouse/bridge.log` and `are.log`. The bridge prints each
 command it receives (`cmd @MOUSE:click,left`), which confirms data is flowing.
 
-Without a re-login the launcher reports "No uinput daemon socket". For a quick test before the
-re-login, the user can start a temporary root daemon and stop it afterwards:
+Without a reboot the launcher reports "No uinput daemon socket". For a quick test before the
+reboot, the user can start a temporary root daemon and stop it afterwards:
 
 ```bash
 sudo systemd-run --unit=ydotoold-test /usr/bin/ydotoold --socket-path=/tmp/.ydotool_socket --socket-perm=0660 --socket-own=$(id -u):$(id -g)
